@@ -1,19 +1,31 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { VersionedTransaction } from "@solana/web3.js";
+import { useSearchParams } from 'next/navigation';
 
 import bs58 from 'bs58';
 import { JsonViewer } from '@textea/json-viewer';
 
 export default function Home() {
+  const searchParams = useSearchParams();
   const [base64Input, setBase64Input] = useState('');
   const [decodedText, setDecodedText] = useState('""');
+
+  useEffect(() => {
+    const txParam = searchParams.get('tx');
+    if (txParam) {
+      setBase64Input(txParam);
+      handleBase64Decode(txParam);
+    }
+  }, [searchParams]);
 
   const handleBase64Decode = (input: string) => {
     try {
       // First decode base64 to binary data
-      const binaryString = atob(input);
+      const binaryString = input.includes('-') || input.includes('_')
+        ? atob(input.replace(/-/g, '+').replace(/_/g, '/'))
+        : atob(input);
       
       // Convert binary string to Uint8Array
       const bytes = new Uint8Array(binaryString.length);
