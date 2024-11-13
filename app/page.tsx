@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { VersionedTransaction } from "@solana/web3.js";
 import { useSearchParams } from 'next/navigation';
 
 import bs58 from 'bs58';
 import { JsonViewer } from '@textea/json-viewer';
 
-export default function Home() {
+function TransactionDecoder() {
   const searchParams = useSearchParams();
   const [base64Input, setBase64Input] = useState('');
   const [decodedText, setDecodedText] = useState('""');
@@ -88,5 +88,17 @@ export default function Home() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8">
+        <div className="row-start-2">Loading...</div>
+      </div>
+    }>
+      <TransactionDecoder />
+    </Suspense>
   );
 }
