@@ -8,7 +8,7 @@ import { JsonViewer } from '@textea/json-viewer';
 
 export default function Home() {
   const [base64Input, setBase64Input] = useState('');
-  const [decodedText, setDecodedText] = useState('');
+  const [decodedText, setDecodedText] = useState('""');
 
   const handleBase64Decode = (input: string) => {
     try {
@@ -42,9 +42,9 @@ export default function Home() {
         }
       };
 
-      setDecodedText(txInfo);
+      setDecodedText(JSON.stringify(txInfo, null, 2));
     } catch (error) {
-      setDecodedText(`Error decoding transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setDecodedText(`"Error decoding transaction: ${error instanceof Error ? error.message : 'Unknown error'}"`);
     }
   };
 
@@ -66,7 +66,7 @@ export default function Home() {
           <div className="w-full">
             <h2 className="text-lg font-bold mb-2">Decoded Transaction:</h2>
             <JsonViewer 
-              value={decodedText}
+              value={JSON.parse(decodedText)}
               defaultInspectDepth={3}
               rootName={false}
               className="w-full p-4 border rounded-lg bg-black/[.05] dark:bg-white/[.06] overflow-auto font-mono text-sm"
