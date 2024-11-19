@@ -11,6 +11,10 @@ function TransactionDecoder() {
   const searchParams = useSearchParams();
   const [base64Input, setBase64Input] = useState('');
   const [decodedText, setDecodedText] = useState('""');
+  const [budgetInfo, setBudgetInfo] = useState<{
+    computeUnits: number;
+    microLamports: number;
+  } | null>(null);
 
   useEffect(() => {
     const txParam = searchParams.get('tx');
@@ -54,8 +58,38 @@ function TransactionDecoder() {
         }
       };
 
+      // Calculate transaction budget
+      let computeUnits = 0;
+      let microLamports = 0;
+
+      const computeBudgetInstructions = transaction.message.compiledInstructions.filter(
+        instruction => {
+          const programId = transaction.message.staticAccountKeys[instruction.programIdIndex].toString();
+          return programId === 'ComputeBudget111111111111111111111111111111';
+        }
+      );
+
+      for (const instruction of computeBudgetInstructions) {
+        const view = new DataView(instruction.data.buffer);
+        if (instruction.data[0] === 2) { // SetComputeUnitLimit
+          computeUnits = view.getUint32(1, true);
+        } else if (instruction.data[0] === 3) { // SetComputeUnitPrice
+          microLamports = Number(view.getBigUint64(1, true));
+        }
+      }
+
+      if (computeBudgetInstructions.length > 0) {
+        setBudgetInfo({
+          computeUnits,
+          microLamports
+        });
+      } else {
+        setBudgetInfo(null);
+      }
+
       setDecodedText(JSON.stringify(txInfo, null, 2));
     } catch (error) {
+      setBudgetInfo(null);
       setDecodedText(`"Error decoding transaction: ${error instanceof Error ? error.message : 'Unknown error'}"`);
     }
   };
@@ -77,6 +111,17 @@ function TransactionDecoder() {
           
           <div className="w-full">
             <h2 className="text-lg font-bold mb-2">Decoded Transaction:</h2>
+            {budgetInfo && (
+              <div className="mb-4 p-4 border rounded-lg bg-black/[.05] dark:bg-white/[.06]">
+                <h3 className="font-semibold mb-2">Transaction Budget:</h3>
+                {budgetInfo.computeUnits > 0 && (
+                  <div>Compute Unit Limit: {budgetInfo.computeUnits.toLocaleString()} CU</div>
+                )}
+                {budgetInfo.microLamports > 0 && (
+                  <div>Compute Unit Price: {budgetInfo.microLamports} μ◎/CU</div>
+                )}
+              </div>
+            )}
             <JsonViewer 
               value={JSON.parse(decodedText)}
               defaultInspectDepth={3}
